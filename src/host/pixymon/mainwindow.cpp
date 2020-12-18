@@ -44,9 +44,10 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     QMainWindow(parent),
     m_ui(new Ui::MainWindow)
 {
-    QCoreApplication::setOrganizationName(PIXYMON_COMPANY);
-    QCoreApplication::setApplicationName(PIXYMON_TITLE);
+    // QCoreApplication::setOrganizationName(PIXYMON_COMPANY);
+    // QCoreApplication::setApplicationName(PIXYMON_TITLE);
 
+    // NEEDED.
     qRegisterMetaType<Device>("Device");
 
     m_ui->setupUi(this);
@@ -63,6 +64,9 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     m_testCycle = false;
     m_waiting = WAIT_NONE;
 
+    m_dumpAndExit = false;
+    m_loadAndExit = false;
+
     parseCommandline(argc, argv);
 
     m_settings = new QSettings(QSettings::NativeFormat, QSettings::UserScope, PIXYMON_COMPANY, PIXYMON_TITLE);
@@ -76,6 +80,22 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     // hide console
     m_showConsole = m_testCycle;
     m_console->setVisible(m_testCycle);
+
+    if(m_dumpAndExit)
+    {
+        m_console->print("Connecting, dumping parameters, and exiting.\n");
+        printf("Dump and exit triggered.\n");
+        QString path = QFileInfo(QCoreApplication::applicationFilePath()).absolutePath();
+        QString dumpFilePath = QFileInfo(path, m_dumpLoadFile).absoluteFilePath();
+        m_console->print("Dumping... (" + dumpFilePath + ")\n");
+    }
+
+    if(m_loadAndExit)
+    {
+        m_console->print("Connecting, loading parameters, and exiting.\n");
+        printf("Load and exit triggered.\n");
+    }
+
     m_ui->actionConsole->setChecked(m_testCycle);
 
     m_ui->toolBar->addAction(m_ui->actionPlay_Pause);
@@ -97,7 +117,8 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     m_ui->statusBar->setContentsMargins(6, 0, 0, 0);
     m_ui->statusBar->addWidget(m_statusLeft);
     m_ui->statusBar->addPermanentWidget(m_statusRight);
-    updateButtons();
+    
+    //updateButtons();
 
     m_parameters.add("Pixy start command", PT_STRING, "",
         "The command that is sent to Pixy upon initialization");
@@ -139,6 +160,26 @@ void MainWindow::parseCommandline(int argc, char *argv[])
         }
         else if (!strcmp("-tc", argv[i]))
             m_testCycle = true;
+        else if (!strcmp("-dx", argv[i]) && i+1<argc)
+        {
+            i++;
+            // Show console, trigger dump and exit routine.
+            m_dumpAndExit = true;
+            m_loadAndExit = false;
+            m_testCycle = true;
+            m_dumpLoadFile = argv[i];
+            m_dumpLoadFile.remove(QRegExp("[\"']"));
+        }
+        else if (!strcmp("-lx", argv[i]) && i+1<argc)
+        {
+            i++;
+            // Show console, trigger param load and exit routine.
+            m_loadAndExit = true;
+            m_dumpAndExit = false;
+            m_testCycle = true;
+            m_dumpLoadFile = argv[i];
+            m_dumpLoadFile.remove(QRegExp("[\"']"));
+        }
         else if (!strcmp("-pf", argv[i]) && i+1<argc)
         {
             i++;
@@ -151,6 +192,10 @@ void MainWindow::parseCommandline(int argc, char *argv[])
 void MainWindow::updateButtons()
 {
     uint runstate = 0;
+
+    if(m_waiting == WAIT_LOADING_PARAMS){
+        return;
+    }
 
     if (m_interpreter && (runstate=m_interpreter->programRunning()))
     {
@@ -214,6 +259,16 @@ void MainWindow::updateButtons()
         m_ui->actionSave_Image->setEnabled(true);
         setEnabledActionsViews(true);
         setEnabledProgs(true);
+
+        // If we are in dump and exit mode
+        if(m_dumpAndExit)
+        {
+            m_console->print("Triggering dumping procedure....\n");
+            m_ui->actionSave_Pixy_parameters->trigger();
+        }else if(m_loadAndExit){
+            m_console->print("Triggering loading procedure....\n");
+            m_ui->actionLoad_Pixy_parameters->trigger();
+        }
     }
     else // nothing connected
     {
@@ -379,6 +434,7 @@ void MainWindow::connectPixy(bool state)
                 connect(m_interpreter, SIGNAL(prog(QString,QString,uint,bool)), this, SLOT(handleProg(QString,QString,uint,bool)));
                 connect(m_interpreter, SIGNAL(paramLoaded()), this, SLOT(handleLoadParams()));
                 connect(m_interpreter, SIGNAL(paramChange()), this, SLOT(handleParamChange()));
+
                 connect(m_interpreter, SIGNAL(version(ushort,ushort,ushort,QString,ushort,ushort,ushort)), this, SLOT(handleVersion(ushort,ushort,ushort,QString,ushort,ushort,ushort)));
                 m_interpreter->start();
             }
@@ -891,24 +947,43 @@ void MainWindow::handleLoadParams()
     if (m_waiting==WAIT_SAVING_PARAMS)
     {
         m_waiting = WAIT_NONE;
-        QString dir;
-        QFileDialog fd(this);
-        fd.setWindowTitle("Please provide a filename for the parameter file");
-        dir = m_parameters.value("Document folder").toString();
-        fd.setDirectory(QDir(dir));
-        fd.setNameFilter("Parameter file (*.prm)");
-        fd.setAcceptMode(QFileDialog::AcceptSave);
-        fd.setDefaultSuffix("prm");
-        if (fd.exec())
+
+        if(m_dumpAndExit)
         {
-            QStringList flist = fd.selectedFiles();
-            if (flist.size()==1)
+            QString path = QFileInfo(QCoreApplication::applicationFilePath()).absolutePath();
+            QString dumpFilePath = QFileInfo(path, m_dumpLoadFile).absoluteFilePath();
+
+            ParamFile pf;
+            if (pf.open(dumpFilePath, false)>=0)
             {
-                ParamFile pf;
-                if (pf.open(flist[0], false)>=0)
+                pf.write(PIXY_PARAMFILE_TAG, &m_interpreter->m_pixyParameters);
+                pf.close();
+            }
+
+            // Close application
+            close();
+        
+        }else{
+            // Do normal save procedure.
+            QString dir;
+            QFileDialog fd(this);
+            fd.setWindowTitle("Please provide a filename for the parameter file");
+            dir = m_parameters.value("Document folder").toString();
+            fd.setDirectory(QDir(dir));
+            fd.setNameFilter("Parameter file (*.prm)");
+            fd.setAcceptMode(QFileDialog::AcceptSave);
+            fd.setDefaultSuffix("prm");
+            if (fd.exec())
+            {
+                QStringList flist = fd.selectedFiles();
+                if (flist.size()==1)
                 {
-                    pf.write(PIXY_PARAMFILE_TAG, &m_interpreter->m_pixyParameters);
-                    pf.close();
+                    ParamFile pf;
+                    if (pf.open(flist[0], false)>=0)
+                    {
+                        pf.write(PIXY_PARAMFILE_TAG, &m_interpreter->m_pixyParameters);
+                        pf.close();
+                    }
                 }
             }
         }
@@ -918,7 +993,8 @@ void MainWindow::handleLoadParams()
 void MainWindow::handleParamChange()
 {
     if (m_interpreter)
-        m_interpreter->loadParams(true);
+        printf("handleParamChange() called\n");
+        m_interpreter->loadParams(false);
 }
 
 void MainWindow::on_actionSave_Image_triggered()
@@ -936,6 +1012,7 @@ void MainWindow::on_actionSave_Pixy_parameters_triggered()
 {
     if (m_interpreter)
     {
+        printf("on_actionSave_Pixy_parameters_triggered()\n");
         m_interpreter->loadParams(false);
         m_waiting = WAIT_SAVING_PARAMS;
     }
@@ -946,28 +1023,64 @@ void MainWindow::on_actionLoad_Pixy_parameters_triggered()
 {
     if (m_interpreter)
     {
-        int res;
-        QString dir;
-        QFileDialog fd(this);
-        fd.setWindowTitle("Please choose a parameter file");
-        dir = m_parameters.value("Document folder").toString();
-        fd.setDirectory(QDir(dir));
-        fd.setNameFilter("Parameter file (*.prm)");
-        if (fd.exec())
-        {
-            QStringList flist = fd.selectedFiles();
-            if (flist.size()==1)
-            {
-                ParamFile pf;
-                pf.open(flist[0], true);
-                res = pf.read(PIXY_PARAMFILE_TAG, &m_interpreter->m_pixyParameters, true);
-                pf.close();
+        m_waiting = WAIT_LOADING_PARAMS;
 
-                if (res>=0)
+        printf("on_actionLoad_Pixy_parameters_triggered()\n");
+        int res;
+
+        if(m_loadAndExit)
+        {
+            QString path = QFileInfo(QCoreApplication::applicationFilePath()).absolutePath();
+            QString dumpFilePath = QFileInfo(path, m_dumpLoadFile).absoluteFilePath();
+            
+            m_console->print("Loading... (" + dumpFilePath + ")\n");
+
+            ParamFile pf;
+            pf.open(dumpFilePath, true);
+            res = pf.read(PIXY_PARAMFILE_TAG, &m_interpreter->m_pixyParameters, true);
+            pf.close();
+
+            printf("Load result: %d\n",res);
+
+            if (res>=0)
+            {
+                m_interpreter->saveParams();
+                m_interpreter->execute("close");
+                m_console->print("Parameters have been successfully loaded!  Resetting...\n");
+            }
+
+            // Dont' load anymore
+            m_loadAndExit = false;
+
+            // Close application
+            // close();
+        }else{
+            // Perform normal loading procedure
+            QString dir;
+            QFileDialog fd(this);
+            fd.setWindowTitle("Please choose a parameter file");
+            dir = m_parameters.value("Document folder").toString();
+            fd.setDirectory(QDir(dir));
+            fd.setNameFilter("Parameter file (*.prm)");
+            if (fd.exec())
+            {
+                QStringList flist = fd.selectedFiles();
+                if (flist.size()==1)
                 {
-                    m_interpreter->saveParams(); // save parameters back to pixy
-                    m_interpreter->execute("close");
-                    m_console->print("Parameters have been successfully loaded!  Resetting...\n");
+                    ParamFile pf;
+                    pf.open(flist[0], true);
+                    
+                    res = pf.read(PIXY_PARAMFILE_TAG, &m_interpreter->m_pixyParameters, true);
+                    pf.close();
+
+                    printf("Load result: %d\n",res);
+
+                    if (res>=0)
+                    {
+                        m_interpreter->saveParams(); // save parameters back to pixy
+                        m_interpreter->execute("close");
+                        m_console->print("Parameters have been successfully loaded!  Resetting...\n");
+                    }
                 }
             }
         }

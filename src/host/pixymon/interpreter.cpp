@@ -1027,11 +1027,13 @@ void Interpreter::setView(uint index)
 
 void Interpreter::loadParams(bool contextual)
 {
+    printf("Loading params FROM PIXY, contextual set to %s\n", contextual ? "true" : "false");
     queueCommand(LOAD_PARAMS, contextual);
 }
 
 void Interpreter::saveParams(bool reject)
 {
+    printf("Saving params TO PIXY, reject set to %s\n", reject ? "true" : "false");
     queueCommand(SAVE_PARAMS, reject);
 }
 

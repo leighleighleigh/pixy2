@@ -118,12 +118,15 @@ private:
     QString m_argvFirmwareFile;
     QString m_initScript;
     QString m_pixyflash;
+    QString m_dumpLoadFile;
     bool m_versionIncompatibility;
     QSettings *m_settings;
     MonParameterDB m_parameters;
     QMessageBox *m_fwInstructions;
     QMessageBox *m_fwMessage;
     bool m_testCycle;
+    bool m_dumpAndExit;
+    bool m_loadAndExit;
     bool m_showConsole;
     QLabel *m_statusLeft;
     QLabel *m_statusRight;
