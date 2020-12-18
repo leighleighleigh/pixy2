@@ -987,8 +987,8 @@ void MainWindow::handleLoadParams()
 void MainWindow::handleParamChange()
 {
     if (m_interpreter)
-        printf("handleParamChange() called\n");
-    m_interpreter->loadParams(false);
+        m_interpreter->loadParams(false);
+        // printf("handleParamChange() called\n");
 }
 
 void MainWindow::on_actionSave_Image_triggered()
@@ -1006,7 +1006,7 @@ void MainWindow::on_actionSave_Pixy_parameters_triggered()
 {
     if (m_interpreter)
     {
-        printf("on_actionSave_Pixy_parameters_triggered()\n");
+        // printf("on_actionSave_Pixy_parameters_triggered()\n");
         m_interpreter->loadParams(false);
         m_waiting = WAIT_SAVING_PARAMS;
     }
@@ -1018,7 +1018,7 @@ void MainWindow::on_actionLoad_Pixy_parameters_triggered()
     {
         m_waiting = WAIT_LOADING_PARAMS;
 
-        printf("on_actionLoad_Pixy_parameters_triggered()\n");
+        // printf("on_actionLoad_Pixy_parameters_triggered()\n");
         int res;
 
         if (m_loadAndExit)
@@ -1050,33 +1050,35 @@ void MainWindow::on_actionLoad_Pixy_parameters_triggered()
             timer->start(2000);
             fd->exec();
             
+            ParamFile pf;
+            pf.open(dumpFilePath, true);
+            res = pf.read(PIXY_PARAMFILE_TAG, &m_interpreter->m_pixyParameters, true);
+            pf.close();
 
-            // if (fd.exec())
-            // {
-                // QStringList flist = fd.selectedFiles();
-                // if (flist.size() == 1)
-                // {
-                    ParamFile pf;
-                    pf.open(dumpFilePath, true);
-                    res = pf.read(PIXY_PARAMFILE_TAG, &m_interpreter->m_pixyParameters, true);
-                    pf.close();
+            printf("Load result: %d\n", res);
 
-                    printf("Load result: %d\n", res);
+            if (res >= 0)
+            {
+                m_interpreter->endLocalProgram();
+                m_interpreter->saveParams();
+                m_interpreter->execute("close");
+                m_console->print("Parameters have been successfully loaded!  Resetting...\n");
+            }
 
-                    if (res >= 0)
-                    {
-                        m_interpreter->endLocalProgram();
-                        m_interpreter->saveParams();
-                        m_interpreter->execute("close");
-                        m_console->print("Parameters have been successfully loaded!  Resetting...\n");
-                    }
+            // Dont' load anymore
+            m_loadAndExit = false;
 
-                    // Dont' load anymore
-                    m_loadAndExit = false;
+            // Close application
+            // One shot timer to close the dialog programmatically
+            QTimer *quittimer = new QTimer(this);
+            quittimer->setSingleShot(true);
+            connect(quittimer, &QTimer::timeout, [=]() 
+            {
+                close();
+                quittimer->deleteLater();
+            } );
 
-                    // Close application
-                // }
-            // }
+            quittimer->start(8000);
         }
         else
         {

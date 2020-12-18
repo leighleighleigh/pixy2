@@ -1,0 +1,57 @@
+<Pixy_parameters>
+ <data type="INT8" value="0" key="Data out port"/>
+ <data type="INT8" value="84" key="I2C address"/>
+ <data type="INT32" value="19200" key="UART baudrate"/>
+ <data type="INT8" value="0" key="Pixy 1.0 compatibility mode"/>
+ <data type="INT8" value="67" key="Camera brightness"/>
+ <data type="INT8" value="1" key="Auto Exposure Correction"/>
+ <data type="INT32" value="0" key="AEC Value"/>
+ <data type="INT8" value="1" key="Auto White Balance"/>
+ <data type="INT8" value="1" key="Auto White Balance on power-up"/>
+ <data type="INT8" value="0" key="Flicker avoidance"/>
+ <data type="INT32" value="0" key="AWB Value"/>
+ <data type="INT8" value="5" key="Min frames per second"/>
+ <data type="INT16" value="-200" key="S0 lower limit"/>
+ <data type="INT16" value="200" key="S0 upper limit"/>
+ <data type="INT16" value="-200" key="S1 lower limit"/>
+ <data type="INT16" value="200" key="S1 upper limit"/>
+ <data type="INT16" value="60" key="Servo frequency"/>
+ <data type="INT16" value="2" key="Edge distance"/>
+ <data type="INT16" value="60" key="Edge threshold"/>
+ <data type="INT16" value="0" key="Minimum line width"/>
+ <data type="INT16" value="30" key="Maximum line width"/>
+ <data type="INT16" value="13" key="Line extraction distance"/>
+ <data type="INT16" value="16" key="Maximum merge distance"/>
+ <data type="INT16" value="4" key="Minimum line length"/>
+ <data type="INT32" value="5000" key="Maximum line compare"/>
+ <data type="INT8" value="1" key="White line"/>
+ <data type="INT8" value="30" key="Line filtering"/>
+ <data type="INT8" value="30" key="Intersection filtering"/>
+ <data type="INT8" value="30" key="Barcode filtering"/>
+ <data type="INT16" value="0" key="Default turn angle"/>
+ <data type="INT8" value="0" key="Delayed turn"/>
+ <data type="INT8" value="1" key="Manual vector select"/>
+ <data type="INT8" value="0" key="Go"/>
+ <data type="INT8" value="0" key="Repeat"/>
+ <data type="STRING" value="" key="Barcode label 0"/>
+ <data type="STRING" value="" key="Barcode label 1"/>
+ <data type="STRING" value="" key="Barcode label 2"/>
+ <data type="STRING" value="" key="Barcode label 3"/>
+ <data type="STRING" value="" key="Barcode label 4"/>
+ <data type="STRING" value="" key="Barcode label 5"/>
+ <data type="STRING" value="" key="Barcode label 6"/>
+ <data type="STRING" value="" key="Barcode label 7"/>
+ <data type="STRING" value="" key="Barcode label 8"/>
+ <data type="STRING" value="" key="Barcode label 9"/>
+ <data type="STRING" value="" key="Barcode label 10"/>
+ <data type="STRING" value="" key="Barcode label 11"/>
+ <data type="STRING" value="" key="Barcode label 12"/>
+ <data type="STRING" value="" key="Barcode label 13"/>
+ <data type="STRING" value="" key="Barcode label 14"/>
+ <data type="STRING" value="turn" key="Barcode label 15"/>
+ <data type="INT8" value="1" key="Default program"/>
+ <data type="INT8" value="0" key="Program select on power-up"/>
+ <data type="INT8" value="0" key="Debug"/>
+ <data type="INT16" value="0" key="fwver"/>
+ <data type="STRING" value="general" key="fwtype"/>
+</Pixy_parameters>
