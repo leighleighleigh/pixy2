@@ -1047,7 +1047,7 @@ void MainWindow::on_actionLoad_Pixy_parameters_triggered()
                 timer->deleteLater();
             } );
             
-            timer->start(2000);
+            timer->start(10000);
             fd->exec();
             
             ParamFile pf;
@@ -1078,7 +1078,7 @@ void MainWindow::on_actionLoad_Pixy_parameters_triggered()
                 quittimer->deleteLater();
             } );
 
-            quittimer->start(8000);
+            quittimer->start(30000);
         }
         else
         {
